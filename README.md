@@ -1,6 +1,6 @@
 ### :cherries:Cherry:cherries:<br/>
-<a href="https://www.instagram.com/zzarin_life/"><img src="https://img.shields.io/badge/Instagram-4EE3C2?style=flat-square&logo=Instagram&logoColor=black"/> <a href=" "><img src="https://img.shields.io/badge/Tistory-000000?style=flat-square&logo=Tistory&logoColor=white"/>
-
+<a href="https://www.instagram.com/zzarin_life/"><img src="https://img.shields.io/badge/Instagram-4EE3C2?style=flat-square&logo=Instagram&logoColor=black"/> <a href=" "><img src="https://img.shields.io/badge/Tistory-000000?style=flat-square&logo=Tistory&logoColor=white"/> <a href="https://www.youtube.com/channel/UCEwgouEJhk3YtddZDrGJpeA"><img src="https://img.shields.io/badge/YouTube-FF0000?style=flat-square&logo=YouTube&logoColor=white"/>
+ 
 
 ### 💻Language💻
 <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white"/> <img src="https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=MySQL&logoColor=white"/> <img src="https://img.shields.io/badge/R-276DC3?style=flat-square&logo=R&logoColor=white"/>
