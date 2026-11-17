@@ -1,0 +1,689 @@
+<title>체리 일기장</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Gowun+Batang:wght@400;700&display=swap">
+<style>
+/* Layout: one phone-width column. Home = month calendar + recent list; Write = chat with a docked composer; Diary = card carousel + "다듬기". */
+:root {
+  --bg: #f3f2f6;
+  --panel: #ffffff;
+  --fg: #1d1b24;
+  --muted: #6c6878;
+  --line: #e1dee8;
+  --accent: #5546c2;
+  --accent-ink: #ffffff;
+  --accent-soft: #e8e5f8;
+  --bubble-me: #5546c2;
+  --bubble-me-ink: #ffffff;
+  --bubble-ai: #ffffff;
+  --warn: #b4410f;
+  --display: "Gowun Batang", "Noto Serif KR", serif;
+  --body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121118; --panel: #1c1a24; --fg: #ece9f4; --muted: #a29db0; --line: #2e2b39;
+  --accent: #a99cff; --accent-ink: #15122a; --accent-soft: #29243f;
+  --bubble-me: #4a3fa8; --bubble-me-ink: #f4f2ff; --bubble-ai: #221f2c; --warn: #f0905f; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121118; --panel: #1c1a24; --fg: #ece9f4; --muted: #a29db0; --line: #2e2b39;
+  --accent: #a99cff; --accent-ink: #15122a; --accent-soft: #29243f;
+  --bubble-me: #4a3fa8; --bubble-me-ink: #f4f2ff; --bubble-ai: #221f2c; --warn: #f0905f; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.6; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.app { max-width: 520px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 40px; }
+button { font: inherit; cursor: pointer; color: inherit; }
+button:focus-visible, textarea:focus-visible, input:focus-visible, .day:focus-visible, label.chip:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 11px 14px; font-weight: 700; font-size: 14px; text-align: center; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--muted); font-weight: 500; }
+.btn:disabled { opacity: .5; cursor: default; }
+.msg { color: var(--muted); font-size: 13px; margin: 0; }
+.msg.err { color: var(--warn); }
+
+/* top bar */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); display: flex; align-items: center; gap: 8px; padding-block: 14px 10px; }
+.bar h1 { font-family: var(--display); font-size: 22px; font-weight: 700; margin: 0; flex: 1; min-width: 0; letter-spacing: -0.01em; }
+.icon { width: 40px; height: 40px; border-radius: 50%; border: 0; background: transparent; font-size: 20px; display: grid; place-items: center; }
+.icon:hover { background: var(--accent-soft); }
+
+/* calendar */
+.month { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+.month b { font-size: 17px; font-variant-numeric: tabular-nums; }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 8px 12px; }
+.wd { text-align: center; font-size: 12px; color: var(--muted); padding-bottom: 4px; }
+.wd:first-child { color: var(--warn); }
+.day { aspect-ratio: 1; max-width: 100%; border: 0; background: transparent; border-radius: 50%; display: grid; place-items: center; font-size: 14px; font-variant-numeric: tabular-nums; position: relative; padding: 0; }
+.day[disabled] { color: var(--line); cursor: default; }
+.day.today { box-shadow: inset 0 0 0 2px var(--accent); font-weight: 700; }
+.day.has { color: #fff; font-weight: 700; }
+.day.draft::after { content: ""; position: absolute; bottom: 12%; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: var(--muted); margin-top: 10px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+.cta { display: grid; margin-top: 16px; }
+.cta .btn { padding: 15px; font-size: 16px; border-radius: 12px; }
+h2.sec { font-size: 13px; color: var(--muted); font-weight: 700; margin: 24px 0 8px; letter-spacing: .02em; }
+.list { display: grid; gap: 8px; }
+.entry { display: flex; gap: 12px; align-items: center; text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 12px; padding: 12px 14px; width: 100%; }
+.entry .d { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 44px; }
+.entry .t { flex: 1; min-width: 0; font-family: var(--display); font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entry .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.empty { text-align: center; color: var(--muted); font-size: 14px; padding: 18px 8px; border: 1px dashed var(--line); border-radius: 12px; }
+
+/* chat */
+.chat { display: grid; gap: 10px; padding-bottom: 12px; }
+.b { max-width: 84%; padding: 10px 14px; border-radius: 16px; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
+.b.ai { background: var(--bubble-ai); border: 1px solid var(--line); border-bottom-left-radius: 4px; justify-self: start; }
+.b.me { background: var(--bubble-me); color: var(--bubble-me-ink); border-bottom-right-radius: 4px; justify-self: end; }
+.b.think { color: var(--muted); font-style: italic; }
+.composer { position: sticky; bottom: 0; background: var(--bg); padding-block: 8px calc(10px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 8px; border-top: 1px solid var(--line); }
+.composer .row { display: flex; gap: 8px; align-items: flex-end; }
+.composer textarea { flex: 1; min-width: 0; resize: none; font: inherit; font-size: 16px; line-height: 1.5; border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 14px; padding: 10px 12px; max-height: 160px; }
+.composer .send { padding: 11px 16px; border-radius: 14px; }
+.hint { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.make { display: grid; }
+.make .btn { padding: 13px; }
+.toggle { border: 0; background: none; color: var(--muted); font-size: 12px; padding: 0; }
+.toggle[aria-pressed="true"] { color: var(--accent); font-weight: 700; }
+
+/* diary */
+.viewer { position: relative; background: #000; border-radius: 8px; overflow: hidden; }
+.track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.track::-webkit-scrollbar { display: none; }
+.track canvas { flex: 0 0 100%; width: 100%; height: auto; max-width: 100%; aspect-ratio: 4 / 5; scroll-snap-align: start; display: block; }
+.count { position: absolute; top: 10px; right: 10px; background: rgba(20,20,20,.72); color: #fff; font-size: 13px; padding: 2px 10px; border-radius: 99px; font-variant-numeric: tabular-nums; }
+.dots { display: flex; justify-content: center; gap: 6px; padding-top: 10px; }
+.dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+.dots span.on { background: var(--accent); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.tools > * { flex: 1 1 130px; }
+label.chip { position: relative; }
+label.chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; margin-top: 16px; }
+.panel h3 { margin: 0; font-size: 15px; }
+.panel textarea, .sheet textarea { width: 100%; font: inherit; font-size: 16px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 10px; padding: 10px 12px; resize: vertical; min-height: 72px; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { border: 1px solid var(--line); background: var(--bg); border-radius: 99px; padding: 5px 11px; font-size: 13px; }
+.thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.thumbs img { width: 100%; border-radius: 4px; display: block; }
+pre.cap { white-space: pre-wrap; margin: 0; font-family: inherit; font-size: 14px; background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+.danger { color: var(--warn); }
+.confirm { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+
+/* sheet */
+.scrim { position: fixed; inset: 0; background: rgba(10,8,20,.45); z-index: 20; display: grid; align-items: end; }
+.sheet { background: var(--panel); border-radius: 18px 18px 0 0; max-width: 520px; width: 100%; margin: 0 auto; padding: 18px max(16px, env(safe-area-inset-left, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 10px; }
+.sheet h3 { margin: 0; font-family: var(--display); font-size: 19px; }
+.sheet textarea { min-height: 160px; }
+.banner { background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-top: 8px; }
+@media (prefers-reduced-motion: no-preference) { .b { animation: in .18s ease-out; } @keyframes in { from { opacity: .4; transform: translateY(4px); } } }
+</style>
+
+<div class="app" id="app"></div>
+
+<script>
+/* ===================== constants ===================== */
+const W = 1080, H = 1350;
+const FONT = '"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+const INK = '#1d1d1d', PAPER = '#f8f8f6', RED = '#c2410c';
+const MOODS = {
+  happy:   { name: '기쁨', base: '#3a1d1f', blobs: ['#ffb36b', '#ff7e8a', '#ffe29a', '#ff9f68'] },
+  calm:    { name: '평온', base: '#17323a', blobs: ['#7fb7be', '#d3e3c8', '#4f8a96', '#a9cfd2'] },
+  tired:   { name: '피곤', base: '#24243a', blobs: ['#8c8fa8', '#c9b8d9', '#5b5f86', '#e3c9d6'] },
+  angry:   { name: '화남', base: '#2e0f0c', blobs: ['#d9483b', '#f2a65a', '#8c2a1f', '#ffcf7a'] },
+  sad:     { name: '우울', base: '#101a2c', blobs: ['#4a6fa5', '#9bb7d4', '#2b4370', '#7d8fb3'] },
+  excited: { name: '설렘', base: '#2a1438', blobs: ['#f25f9c', '#ffd166', '#6a4c93', '#ff9671'] },
+};
+const DOT = { happy: '#f08a4b', calm: '#4f8a96', tired: '#7d7fa6', angry: '#d9483b', sad: '#4a6fa5', excited: '#e0558f' };
+const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
+const FIRST_Q = '오늘 하루 어땠어?';
+
+/* ===================== prompts ===================== */
+const INTERVIEW = (date, style) => `너는 나의 "잠들기 전 일기 친구"야. 내 이름은 체리야. 오늘 날짜는 ${date}.
+나는 누워서 핸드폰 키보드 음성 입력으로 말하고 있어서, 맞춤법이나 띄어쓰기가 엉망일 수 있어. 신경 쓰지 말고 뜻만 알아들어.
+
+대화하는 방식
+- 답은 짧게, 한두 문장. 목록·표·마크다운·이모지는 쓰지 마.
+- 질문은 한 번에 하나만. 내 대답에 맞춰 자연스럽게 다음 질문을 이어 가.
+- 친한 친구처럼 반말로 다정하게. 분석하거나 조언을 늘어놓지 마. 내가 원할 때만 짧게.
+- 처음 두세 번 주고받으면서 오늘을 꿰는 주제 하나를 찾고, 그 주제 안에서 장면 2~4개(사건·감정·생각)를 끌어내.
+- 보통 5~8번 주고받으면 충분해. 대답이 짧아지거나 졸려 보이면 무리하지 말고 마무리해.
+- 내가 "잘게", "여기까지", "일기 써 줘"라고 하면 "오늘 이야기 고마워. 아래 '일기로 만들기'를 누르면 카드로 정리해 줄게. 잘 자!"처럼 짧게 마무리해.
+
+거친 말
+- 내가 욕을 하거나 거칠게 말해도 혼내거나 지적하지 마. "그랬구나, 진짜 열받았겠다"처럼 감정을 받아 줘.
+- 단, 내가 정말로 나 자신을 해치고 싶다는 뜻으로 말하는 것 같으면 그냥 넘기지 말고 다정하게 괜찮은지 묻고, 필요하면 자살예방상담전화 109를 알려 줘.
+${style ? `\n내 말투 메모 (항상 지켜)\n${style}\n` : ''}
+이제 이어지는 대화에서 일기 친구로만 대답해.`;
+
+const SCHEMA = `{
+  "date": "YYYY-MM-DD",
+  "mood": "happy|calm|tired|angry|sad|excited 중 하나",
+  "cover": { "title": "첫 줄\\n둘째 줄?" },
+  "cards": [
+    { "headline": "“첫 줄\\n둘째 줄”", "intro": "그때 있었던 일 2~3문장", "speaker": "", "quote": "그때 든 생각 3~5문장. **제일 중요한 한 문장.**" }
+  ],
+  "closing": { "headline": "첫 줄\\n둘째 줄", "body": "오늘을 돌아보는 마무리 3~5문장. **핵심 한 문장.**" },
+  "caption": "인스타 캡션 한두 줄\\n\\n#말로쓰는일기 #일기 #해시태그"
+}`;
+
+const WRITING_RULES = style => `글쓰기 규칙
+- 내가 직접 쓴 일기처럼 100% 1인칭. "체리는", "그녀는", "~했다고 한다" 같은 3인칭·기자 말투 금지. 내 이름도 넣지 마.
+- 담백한 일기체 "~했다", "~인 것 같다". 내가 실제로 쓴 단어와 말버릇을 살리고, 문학적으로 꾸미지 마.
+- cover.title: 오늘의 주제를 두 줄로, 나한테 던지는 질문이나 혼잣말처럼.
+- cards: 장면마다 한 장, 2~5장. 제목으로 뽑을 한마디가 없는 이야기는 뺀다. 쓸 장면이 하나면 한 장.
+  - headline: 그 장면에서 내가 한 말 중 제일 와닿는 한마디를 “ ” 안에, 두 줄(\\n).
+  - intro + quote 합쳐 250자를 넘기지 마. 넘으면 카드를 나눠.
+  - speaker는 항상 빈 문자열.
+- closing.headline은 따옴표 없이 두 줄.
+- 거친 말은 감정은 살리되 순화. 다른 사람 실명은 "친구", "팀장님"처럼.
+- 내가 한 말에 없는 사실은 지어내지 마.
+${style ? `\n내 말투 메모 (항상 지켜)\n${style}\n` : ''}`;
+
+const MAKE = (date, transcript, style) => `아래는 오늘(${date}) 나와 일기 친구의 대화야. 이걸로 인스타 캐러셀 카드용 일기를 써 줘.
+
+${WRITING_RULES(style)}
+다른 말 없이 아래 모양의 JSON 하나만 답해. date는 "${date}".
+${SCHEMA}
+
+대화
+${transcript}`;
+
+const REVISE = (diary, request, transcript, style) => `내 일기 카드 데이터를 내 요청대로 고쳐 줘. 요청과 상관없는 부분은 그대로 둬.
+카드 번호는 표지 다음 장이 1번이야 (cards[0] = 1번 카드, 마지막 맺음말은 closing).
+
+내 요청: ${request}
+
+${WRITING_RULES(style)}
+다른 말 없이 고친 전체 JSON 하나만 답해. 모양은 지금 데이터와 똑같이.
+
+지금 데이터
+${JSON.stringify(diary)}
+
+참고: 원래 대화
+${transcript}`;
+
+/* ===================== storage ===================== */
+const local = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+const S = { db: null, mode: 'loading', entries: {}, style: '', sample: null, downloads: null };
+
+async function saveEntry(e) {
+  e.updatedAt = Date.now();
+  S.entries[e.date] = e;
+  if (S.db) {
+    try { await S.db.doc('diaries/' + e.date).set(e); }
+    catch { flash('저장이 잠깐 실패했어요. 화면을 닫지 말고 잠시 뒤 다시 해 주세요.'); }
+  } else local.set('diaries', S.entries);
+}
+async function removeEntry(date) {
+  delete S.entries[date];
+  if (S.db) { try { await S.db.doc('diaries/' + date).delete(); } catch {} }
+  else local.set('diaries', S.entries);
+}
+async function saveStyle(text) {
+  S.style = text.trim();
+  if (S.db) { try { await S.db.doc('settings/style').set({ notes: S.style }); } catch {} }
+  else local.set('style', S.style);
+}
+
+/* ===================== utils ===================== */
+const $ = s => document.querySelector(s);
+const h = (tag, attrs = {}, ...kids) => {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') el.className = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else if (v === true) el.setAttribute(k, '');
+    else if (v !== false && v != null) el.setAttribute(k, v);
+  }
+  kids.flat().forEach(c => c != null && el.append(c.nodeType ? c : String(c)));
+  return el;
+};
+const pad = n => String(n).padStart(2, '0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const todayIso = () => iso(new Date());
+const nice = date => { const [y, m, d] = date.split('-').map(Number); return `${m}월 ${d}일 ${WEEK[new Date(y, m - 1, d).getDay()]}요일`; };
+const transcript = msgs => msgs.map(m => (m.role === 'user' ? '나: ' : '일기 친구: ') + m.content).join('\n');
+const sampleError = e => ({
+  not_granted: 'Claude 사용을 허락해야 대화할 수 있어요. 다시 보내면 허락 창이 떠요.',
+  rate_limited: '요청이 몰렸어요. 잠깐 뒤에 다시 보내 주세요.',
+  invalid_json: '정리하다가 형식이 꼬였어요. 한 번 더 눌러 주세요.',
+  prompt_too_large: '대화가 너무 길어요. 일기로 만들기를 눌러 마무리해 주세요.',
+  cancelled: '멈췄어요.',
+}[e?.code] || '지금은 Claude가 대답하지 못했어요. 잠시 뒤 다시 해 주세요.');
+let flashTimer;
+function flash(text) {
+  let el = $('#flash');
+  if (!el) { el = h('div', { id: 'flash', class: 'banner', role: 'status' }); $('#app').prepend(el); }
+  el.textContent = text; clearTimeout(flashTimer); flashTimer = setTimeout(() => el.remove(), 4000);
+}
+
+/* ===================== router ===================== */
+let view = { name: 'home', month: null, date: null };
+function go(name, date) {
+  view = { ...view, name, date: date ?? view.date };
+  try { speechSynthesis.cancel(); } catch {}
+  render(); window.scrollTo(0, 0);
+}
+function render() {
+  const app = $('#app'); app.innerHTML = '';
+  if (view.name === 'home') renderHome(app);
+  else if (view.name === 'write') renderWrite(app);
+  else renderDiary(app);
+}
+
+/* ===================== home ===================== */
+function renderHome(app) {
+  const now = new Date();
+  if (!view.month) view.month = new Date(now.getFullYear(), now.getMonth(), 1);
+  const m = view.month, y = m.getFullYear(), mo = m.getMonth();
+  const today = todayIso();
+  app.append(h('div', { class: 'bar' },
+    h('h1', {}, '체리 일기장'),
+    h('button', { class: 'icon', 'aria-label': '내 말투 메모', title: '내 말투 메모', onclick: openStyle }, '✎')));
+  if (S.mode === 'local') app.append(h('div', { class: 'banner' }, '이 화면에서는 일기가 이 기기에만 저장돼요. Claude 앱에 로그인한 상태로 열면 어디서나 볼 수 있어요.'));
+
+  const count = Object.values(S.entries).filter(e => e.diary && e.date.startsWith(`${y}-${pad(mo + 1)}`)).length;
+  app.append(h('div', { class: 'month' },
+    h('button', { class: 'icon', 'aria-label': '이전 달', onclick: () => { view.month = new Date(y, mo - 1, 1); render(); } }, '‹'),
+    h('div', { style: 'text-align:center' }, h('b', {}, `${y}년 ${mo + 1}월`), h('div', { class: 'msg' }, count ? `${count}일 기록했어요` : '아직 기록이 없어요')),
+    h('button', { class: 'icon', 'aria-label': '다음 달', onclick: () => { view.month = new Date(y, mo + 1, 1); render(); } }, '›')));
+
+  const cal = h('div', { class: 'cal', role: 'grid', 'aria-label': `${y}년 ${mo + 1}월 달력` });
+  WEEK.forEach(w => cal.append(h('div', { class: 'wd' }, w)));
+  const first = new Date(y, mo, 1).getDay(), days = new Date(y, mo + 1, 0).getDate();
+  for (let i = 0; i < first; i++) cal.append(h('div'));
+  for (let d = 1; d <= days; d++) {
+    const date = `${y}-${pad(mo + 1)}-${pad(d)}`, e = S.entries[date];
+    const future = date > today, done = e?.diary, draft = e && !e.diary;
+    const btn = h('button', {
+      class: 'day' + (date === today ? ' today' : '') + (done ? ' has' : '') + (draft ? ' draft' : ''),
+      disabled: future, 'aria-label': `${mo + 1}월 ${d}일${done ? ', 일기 있음' : draft ? ', 쓰다 만 일기' : ''}`,
+      onclick: () => done ? go('diary', date) : go('write', date),
+    }, d);
+    if (done) btn.style.background = DOT[e.diary.mood] || DOT.calm;
+    cal.append(btn);
+  }
+  app.append(cal);
+  app.append(h('div', { class: 'legend' }, Object.entries(MOODS).map(([k, v]) => h('span', {}, h('i', { style: `background:${DOT[k]}` }), v.name))));
+
+  const t = S.entries[today];
+  app.append(h('div', { class: 'cta' }, h('button', { class: 'btn primary', onclick: () => t?.diary ? go('diary', today) : go('write', today) },
+    t?.diary ? '오늘 일기 보기' : t ? '오늘 이야기 이어 하기' : '오늘 일기 쓰기')));
+  app.append(h('p', { class: 'msg', style: 'text-align:center;margin-top:8px' }, '지난 날짜를 누르면 그날 일기를 보거나 새로 쓸 수 있어요.'));
+
+  app.append(h('h2', { class: 'sec' }, '최근 일기'));
+  const list = Object.values(S.entries).filter(e => e.diary).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
+  app.append(list.length ? h('div', { class: 'list' }, list.map(e => h('button', { class: 'entry', onclick: () => go('diary', e.date) },
+    h('span', { class: 'dot', style: `background:${DOT[e.diary.mood] || DOT.calm}` }),
+    h('span', { class: 'd' }, e.date.slice(5).replace('-', '.')),
+    h('span', { class: 't' }, String(e.diary.cover?.title || '').replace(/\n/g, ' ')))))
+    : h('div', { class: 'empty' }, S.mode === 'loading' ? '일기장을 여는 중이에요…' : '첫 일기를 써 보세요. 오늘 있었던 일을 말하듯이 대답하면 돼요.'));
+}
+
+/* ===================== write (chat) ===================== */
+let busy = null, speak = local.get('speak') ?? false;
+function renderWrite(app) {
+  const date = view.date, e = S.entries[date] || { date, messages: [{ role: 'assistant', content: FIRST_Q }] };
+  if (!e.messages?.length) e.messages = [{ role: 'assistant', content: FIRST_Q }];
+  app.append(h('div', { class: 'bar' },
+    h('button', { class: 'icon', 'aria-label': '달력으로', onclick: () => go('home') }, '‹'),
+    h('h1', { style: 'font-size:18px' }, nice(date)),
+    e.diary ? h('button', { class: 'btn ghost', onclick: () => go('diary', date) }, '카드 보기') : null));
+  if (!S.sample) app.append(h('div', { class: 'banner' }, S.mode === 'loading' ? 'Claude를 불러오는 중이에요…' : '이 화면에서는 Claude를 부를 수 없어요. Claude 앱이나 claude.ai에서 열어 주세요.'));
+
+  const chat = h('div', { class: 'chat', id: 'chat', 'aria-live': 'polite' });
+  e.messages.forEach(m => chat.append(h('div', { class: 'b ' + (m.role === 'user' ? 'me' : 'ai') }, m.content)));
+  app.append(chat);
+
+  const answers = e.messages.filter(m => m.role === 'user').length;
+  const ta = h('textarea', { id: 'say', rows: 1, placeholder: '말하듯이 적어 주세요', 'aria-label': '대답' });
+  ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 160) + 'px'; local.set('draft-' + date, ta.value); });
+  ta.value = local.get('draft-' + date) || '';
+  const sendBtn = h('button', { class: 'btn primary send', onclick: () => send(e, ta) }, '보내기');
+  const stopBtn = h('button', { class: 'btn send', id: 'stop', hidden: true, onclick: () => busy?.abort() }, '멈춤');
+  const makeBtn = h('button', { class: 'btn', id: 'make', onclick: () => makeDiary(e) }, e.diary ? '대화 내용으로 카드 다시 만들기' : '일기로 만들기');
+  const speakBtn = h('button', { class: 'toggle', 'aria-pressed': String(speak), onclick: () => {
+    speak = !speak; local.set('speak', speak); speakBtn.setAttribute('aria-pressed', String(speak)); speakBtn.textContent = speak ? '🔊 질문 읽어 주기 켜짐' : '🔈 질문 읽어 주기';
+    if (speak) say(e.messages[e.messages.length - 1]?.content); else try { speechSynthesis.cancel(); } catch {}
+  } }, speak ? '🔊 질문 읽어 주기 켜짐' : '🔈 질문 읽어 주기');
+  app.append(h('div', { class: 'composer' },
+    answers >= 2 ? h('div', { class: 'make' }, makeBtn) : null,
+    h('div', { class: 'row' }, ta, sendBtn, stopBtn),
+    h('div', { class: 'hint' }, h('span', {}, '키보드의 🎙️를 누르면 말로 적을 수 있어요'), speakBtn),
+    h('p', { class: 'msg', id: 'wmsg', 'aria-live': 'polite' })));
+  ta.addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing && matchMedia('(pointer:fine)').matches) { ev.preventDefault(); send(e, ta); } });
+  requestAnimationFrame(() => { window.scrollTo(0, document.body.scrollHeight); });
+}
+function say(text) {
+  if (!speak || !text) return;
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'ko-KR'; u.rate = 1; speechSynthesis.speak(u); } catch {}
+}
+function setBusy(on) {
+  ['#stop'].forEach(s => { const el = $(s); if (el) el.hidden = !on; });
+  const send = document.querySelector('.send.primary'); if (send) send.hidden = on;
+  const mk = $('#make'); if (mk) mk.disabled = on;
+}
+async function send(e, ta) {
+  const text = ta.value.trim();
+  if (!text || busy) return;
+  if (!S.sample) { $('#wmsg').textContent = '이 화면에서는 Claude를 부를 수 없어요.'; return; }
+  e.messages.push({ role: 'user', content: text });
+  ta.value = ''; ta.style.height = 'auto'; local.set('draft-' + e.date, '');
+  const chat = $('#chat');
+  chat.append(h('div', { class: 'b me' }, text));
+  const bubble = h('div', { class: 'b ai think' }, '생각하는 중…'); chat.append(bubble);
+  window.scrollTo(0, document.body.scrollHeight);
+  busy = new AbortController(); setBusy(true); $('#wmsg').textContent = '';
+  try {
+    const { text: reply } = await S.sample([{ role: 'user', content: INTERVIEW(e.date, S.style) }, ...e.messages], {
+      cache: false, signal: busy.signal,
+      onText: ({ text }) => { bubble.classList.remove('think'); bubble.textContent = text; },
+    });
+    e.messages.push({ role: 'assistant', content: reply.trim() });
+    bubble.classList.remove('think'); bubble.textContent = reply.trim();
+    await saveEntry(e);
+    say(reply.trim());
+    if (e.messages.filter(m => m.role === 'user').length === 2 && !$('#make')) { busy = null; render(); return; }
+  } catch (err) {
+    e.messages.pop(); bubble.remove(); chat.lastElementChild?.remove();
+    ta.value = text; $('#wmsg').className = 'msg err'; $('#wmsg').textContent = sampleError(err);
+  } finally { busy = null; setBusy(false); }
+}
+async function makeDiary(e) {
+  if (busy || !S.sample) return;
+  const msg = $('#wmsg'); msg.className = 'msg'; msg.textContent = '대화를 일기 카드로 정리하고 있어요. 30초~1분쯤 걸려요.';
+  busy = new AbortController(); setBusy(true);
+  try {
+    const d = await S.sample.json(MAKE(e.date, transcript(e.messages), S.style), { signal: busy.signal, cache: false });
+    if (!d || !d.cover || !Array.isArray(d.cards)) throw { code: 'invalid_json' };
+    d.date = e.date;
+    e.diary = d; e.history = [];
+    await saveEntry(e);
+    busy = null; go('diary', e.date);
+  } catch (err) { msg.className = 'msg err'; msg.textContent = sampleError(err); }
+  finally { busy = null; setBusy(false); }
+}
+
+/* ===================== diary (cards) ===================== */
+let photo = null, photoFor = null, canvases = [];
+function renderDiary(app) {
+  const e = S.entries[view.date];
+  if (!e?.diary) return go('write', view.date);
+  if (photoFor !== e.date) { photo = null; photoFor = e.date; }
+  const d = e.diary;
+  app.append(h('div', { class: 'bar' },
+    h('button', { class: 'icon', 'aria-label': '달력으로', onclick: () => go('home') }, '‹'),
+    h('h1', { style: 'font-size:18px' }, nice(e.date)),
+    h('button', { class: 'btn ghost', onclick: () => go('write', e.date) }, '대화 보기')));
+
+  const track = h('div', { class: 'track', id: 'track' });
+  const count = h('div', { class: 'count', id: 'count' }, '1/1');
+  app.append(h('div', { class: 'viewer' }, track, count), h('div', { class: 'dots', id: 'dots' }));
+  track.addEventListener('scroll', () => {
+    const i = Math.round(track.scrollLeft / track.clientWidth);
+    count.textContent = `${i + 1}/${canvases.length}`;
+    [...$('#dots').children].forEach((s, k) => s.classList.toggle('on', k === i));
+  }, { passive: true });
+
+  const file = h('input', { type: 'file', accept: 'image/*', 'aria-label': '표지 사진' });
+  file.onchange = ev => {
+    const f = ev.target.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => { const im = new Image(); im.onload = () => { photo = im; drawAll(e); }; im.src = rd.result; };
+    rd.readAsDataURL(f);
+  };
+  const saveBtn = h('button', { class: 'btn primary', hidden: !S.downloads, onclick: () => saveAll(e) }, '카드 전부 저장');
+  app.append(h('div', { class: 'tools' },
+    saveBtn,
+    d.caption ? h('button', { class: 'btn', onclick: copyCaption }, '캡션 복사') : null,
+    h('label', { class: 'btn chip' }, '📷 표지 사진', file),
+    photo ? h('button', { class: 'btn', onclick: () => { photo = null; render(); } }, '사진 빼기') : null));
+  app.append(h('p', { class: 'msg', id: 'smsg', style: 'margin-top:8px' }, S.downloads ? '사진은 저장되지 않아요. 카드 저장 전에 넣어 주세요.' : '아래 카드 이미지를 길게 눌러 사진첩에 저장하세요.'));
+
+  /* 다듬기 */
+  const req = h('textarea', { id: 'req', placeholder: '예: 2번 카드 좀 더 담백하게 / "방광염" 얘기는 빼 줘 / 표지 제목 다르게', 'aria-label': '고치고 싶은 점' });
+  const keep = h('input', { type: 'checkbox', id: 'keep' });
+  const reviseBtn = h('button', { class: 'btn primary', id: 'revise', onclick: () => revise(e, req.value, keep.checked) }, '고치기');
+  const undoBtn = e.history?.length ? h('button', { class: 'btn', onclick: () => undo(e) }, '되돌리기') : null;
+  app.append(h('div', { class: 'panel' },
+    h('h3', {}, '같이 다듬기'),
+    h('div', { class: 'pills' }, ['더 담백하게', '내 말투 그대로', '더 짧게', '표지 제목 다르게'].map(p =>
+      h('button', { class: 'pill', onclick: () => { req.value = req.value ? req.value + ' / ' + p : p; req.focus(); } }, p))),
+    req,
+    h('label', { class: 'check', for: 'keep' }, keep, '앞으로 일기에도 이렇게 써 줘 (말투 메모에 저장)'),
+    h('div', { class: 'tools', style: 'margin-top:0' }, reviseBtn, undoBtn),
+    h('p', { class: 'msg', id: 'rmsg', 'aria-live': 'polite' })));
+
+  if (d.caption) app.append(h('div', { class: 'panel' }, h('h3', {}, '캡션'), h('pre', { class: 'cap', id: 'cap' }, d.caption)));
+  app.append(h('div', { class: 'panel' }, h('h3', {}, '저장용 이미지'), h('div', { class: 'thumbs', id: 'thumbs' })));
+  const del = h('div', { class: 'confirm', style: 'margin-top:16px' },
+    h('button', { class: 'btn ghost danger', onclick: () => {
+      del.replaceChildren(h('span', {}, '이 날 일기를 지울까요? 되돌릴 수 없어요.'),
+        h('button', { class: 'btn', onclick: async () => { await removeEntry(e.date); go('home'); } }, '지우기'),
+        h('button', { class: 'btn ghost', onclick: render }, '취소'));
+    } }, '이 날 일기 지우기'));
+  app.append(del);
+  drawAll(e);
+}
+async function drawAll(e) {
+  const d = e.diary;
+  await fonts(JSON.stringify(d));
+  const pages = [ctx => drawCover(ctx, d)];
+  d.cards.forEach((c, i) => pages.push(ctx => drawStory(ctx, c, i + 1)));
+  if (d.closing) pages.push(ctx => drawClosing(ctx, d.closing, d.cards.length + 1));
+  const track = $('#track'); if (!track) return;
+  track.innerHTML = ''; canvases = [];
+  pages.forEach((draw, i) => {
+    const cv = h('canvas', { width: W, height: H, role: 'img', 'aria-label': `카드 ${i + 1}` });
+    draw(cv.getContext('2d')); track.append(cv); canvases.push(cv);
+  });
+  $('#dots').innerHTML = canvases.map((_, i) => `<span class="${i ? '' : 'on'}"></span>`).join('');
+  $('#count').textContent = `1/${canvases.length}`;
+  const th = $('#thumbs'); th.innerHTML = '';
+  canvases.forEach((cv, i) => th.append(h('img', { src: cv.toDataURL('image/png'), alt: `카드 ${i + 1}` })));
+}
+async function saveAll(e) {
+  const msg = $('#smsg');
+  for (let i = 0; i < canvases.length; i++) {
+    const blob = await new Promise(r => canvases[i].toBlob(r, 'image/png'));
+    try { await S.downloads.save({ filename: `${e.date.replace(/-/g, '')}_${i + 1}.png`, data: blob }); msg.textContent = `${i + 1}/${canvases.length}장 저장했어요.`; }
+    catch (err) { msg.textContent = err?.code === 'declined' ? `${i + 1}번째 카드에서 저장을 멈췄어요.` : '여기서는 저장이 안 돼요. 아래 이미지를 길게 눌러 저장하세요.'; return; }
+  }
+}
+async function copyCaption() {
+  const e = S.entries[view.date], msg = $('#smsg');
+  try { await navigator.clipboard.writeText(e.diary.caption); msg.textContent = '캡션을 복사했어요.'; }
+  catch { const r = document.createRange(); r.selectNodeContents($('#cap')); getSelection().removeAllRanges(); getSelection().addRange(r); msg.textContent = '캡션을 선택해 뒀어요. 길게 눌러 복사하세요.'; }
+}
+async function revise(e, request, keep) {
+  request = request.trim();
+  const msg = $('#rmsg');
+  if (!request) { msg.textContent = '어떻게 고칠지 적어 주세요.'; return; }
+  if (!S.sample) { msg.textContent = '이 화면에서는 Claude를 부를 수 없어요.'; return; }
+  if (busy) return;
+  const btn = $('#revise'); btn.disabled = true; msg.className = 'msg'; msg.textContent = '고치는 중이에요. 30초쯤 걸려요.';
+  busy = new AbortController();
+  try {
+    if (keep) await saveStyle((S.style ? S.style + '\n' : '') + '- ' + request);
+    const d = await S.sample.json(REVISE(e.diary, request, transcript(e.messages || []), S.style), { signal: busy.signal, cache: false });
+    if (!d || !d.cover || !Array.isArray(d.cards)) throw { code: 'invalid_json' };
+    d.date = e.date;
+    e.history = [...(e.history || []), e.diary].slice(-5);
+    e.diary = d;
+    await saveEntry(e);
+    busy = null; render();
+    flash(keep ? '고쳤어요. 말투 메모에도 저장했어요.' : '고쳤어요.');
+  } catch (err) { msg.className = 'msg err'; msg.textContent = sampleError(err); btn.disabled = false; }
+  finally { busy = null; }
+}
+async function undo(e) {
+  e.diary = e.history.pop();
+  await saveEntry(e); render(); flash('이전 버전으로 되돌렸어요.');
+}
+
+/* ===================== 말투 메모 sheet ===================== */
+function openStyle() {
+  const ta = h('textarea', { id: 'styleText', 'aria-label': '말투 메모', placeholder: '예:\n- "~했다고 한다" 같은 말투 쓰지 않기\n- 회사 사람 이름은 빼기\n- 너무 감성적으로 쓰지 않기' });
+  ta.value = S.style;
+  const scrim = h('div', { class: 'scrim', onclick: ev => { if (ev.target === scrim) scrim.remove(); } },
+    h('div', { class: 'sheet', role: 'dialog', 'aria-label': '내 말투 메모' },
+      h('h3', {}, '내 말투 메모'),
+      h('p', { class: 'msg' }, 'Claude가 질문하고 일기를 쓸 때 항상 지켜요. "같이 다듬기"에서 저장한 요청도 여기에 쌓여요.'),
+      ta,
+      h('div', { class: 'tools', style: 'margin-top:0' },
+        h('button', { class: 'btn primary', onclick: async () => { await saveStyle(ta.value); scrim.remove(); flash('말투 메모를 저장했어요.'); } }, '저장'),
+        h('button', { class: 'btn', onclick: () => scrim.remove() }, '닫기'))));
+  document.body.append(scrim); ta.focus();
+}
+
+/* ===================== card renderer ===================== */
+async function fonts(text) {
+  if (!document.fonts) return;
+  const chars = [...new Set(text + '0123456789.')].join('');
+  try { await Promise.all(['400', '700', '900'].map(w => document.fonts.load(`${w} 40px "Noto Sans KR"`, chars))); } catch {}
+}
+function runs(text) {
+  const out = [];
+  String(text || '').split(/(\*\*[^*]+\*\*)/).forEach(p => {
+    if (!p) return;
+    if (p.startsWith('**') && p.endsWith('**')) out.push({ t: p.slice(2, -2), b: true });
+    else out.push({ t: p, b: false });
+  });
+  return out;
+}
+const fontFor = (r, size) => `${r.b ? 700 : 400} ${size}px ${FONT}`;
+function layout(ctx, paras, size, maxW, lh) {
+  const lines = [];
+  paras.forEach((para, pi) => {
+    const toks = [];
+    para.forEach(r => r.t.split(/(\s+)/).forEach(w => { if (w) toks.push({ t: w.replace(/\s+/g, ' '), b: r.b, c: r.c }); }));
+    let line = [], lw = 0;
+    const push = () => { while (line.length && line[line.length - 1].t === ' ') line.pop(); lines.push(line); line = []; lw = 0; };
+    for (const tk of toks) {
+      ctx.font = fontFor(tk, size);
+      const w = ctx.measureText(tk.t).width;
+      if (tk.t === ' ' && line.length === 0) continue;
+      if (lw + w > maxW && line.length) push();
+      if (w > maxW) {
+        for (const ch of tk.t) { const cw = ctx.measureText(ch).width; if (lw + cw > maxW) push(); line.push({ ...tk, t: ch, w: cw }); lw += cw; }
+      } else if (!(tk.t === ' ' && line.length === 0)) { line.push({ ...tk, w }); lw += w; }
+    }
+    push();
+    if (pi < paras.length - 1) lines.push('gap');
+  });
+  return { lines, height: lines.reduce((s, l) => s + (l === 'gap' ? size * lh * 0.9 : size * lh), 0) };
+}
+function drawLines(ctx, lines, x, y, size, lh, color) {
+  for (const l of lines) {
+    if (l === 'gap') { y += size * lh * 0.9; continue; }
+    let cx = x;
+    for (const tk of l) { ctx.font = fontFor(tk, size); ctx.fillStyle = tk.c || color; ctx.fillText(tk.t, cx, y + size); cx += tk.w; }
+    y += size * lh;
+  }
+}
+function centered(ctx, text, y, size, color) {
+  const ls = String(text || '').split('\n');
+  ctx.font = `900 ${size}px ${FONT}`; ctx.fillStyle = color; ctx.textAlign = 'center';
+  ls.forEach((t, i) => ctx.fillText(t, W / 2, y + size + i * size * 1.38));
+  ctx.textAlign = 'left';
+  return y + ls.length * size * 1.38;
+}
+function paperCard(ctx, pageNo) {
+  ctx.fillStyle = PAPER; ctx.fillRect(0, 0, W, H);
+  ctx.font = `italic 34px Georgia, "Times New Roman", serif`; ctx.fillStyle = INK; ctx.textAlign = 'center';
+  ctx.fillText(String(pageNo), W / 2, H - 70); ctx.textAlign = 'left';
+}
+function bodyBlock(ctx, paras, top) {
+  const maxW = W - 144, bottom = H - 150, lh = 1.75;
+  let size = 31, L;
+  do { L = layout(ctx, paras, size, maxW, lh); if (top + L.height <= bottom) break; size -= 1; } while (size > 20);
+  drawLines(ctx, L.lines, 72, top, size, lh, INK);
+}
+function headline(ctx, text, top) {
+  let size = 54;
+  const longest = Math.max(...String(text || '').split('\n').map(s => s.length));
+  if (longest > 16) size = Math.max(40, Math.floor(54 * 16 / longest));
+  return centered(ctx, text, top, size, INK);
+}
+function drawStory(ctx, c, pageNo) {
+  paperCard(ctx, pageNo);
+  const after = headline(ctx, c.headline, 150);
+  const quote = runs(c.quote);
+  const sp = String(c.speaker || '').trim();
+  if (sp) quote.unshift({ t: sp + ' ', b: true, c: RED });
+  bodyBlock(ctx, [runs(c.intro), quote], after + 56);
+}
+function drawClosing(ctx, c, pageNo) {
+  paperCard(ctx, pageNo);
+  const after = headline(ctx, c.headline, 150);
+  bodyBlock(ctx, String(c.body || '').split(/\n\s*\n/).map(runs), after + 56);
+}
+function drawCover(ctx, d) {
+  if (photo) {
+    const s = Math.max(W / photo.width, H / photo.height), w = photo.width * s, hh = photo.height * s;
+    ctx.drawImage(photo, (W - w) / 2, (H - hh) / 2, w, hh);
+  } else {
+    const m = MOODS[d.mood] || MOODS.calm;
+    ctx.fillStyle = m.base; ctx.fillRect(0, 0, W, H);
+    let r = [...(d.date || 'x')].reduce((a, ch) => a + ch.charCodeAt(0), 0);
+    const rnd = () => (r = (r * 9301 + 49297) % 233280) / 233280;
+    m.blobs.forEach(col => {
+      const x = rnd() * W, y = rnd() * H * 0.85, rad = 380 + rnd() * 420;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, rad);
+      g.addColorStop(0, col + 'ee'); g.addColorStop(1, col + '00');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    });
+    const img = ctx.getImageData(0, 0, W, H), px = img.data;
+    for (let i = 0; i < px.length; i += 4) { const n = (Math.random() - 0.5) * 26; px[i] += n; px[i + 1] += n; px[i + 2] += n; }
+    ctx.putImageData(img, 0, 0);
+  }
+  if (d.date) {
+    const [, mm, dd] = d.date.split('-');
+    ctx.font = `900 220px ${FONT}`; ctx.fillStyle = photo ? 'rgba(255,255,255,.28)' : 'rgba(255,255,255,.16)';
+    ctx.fillText(`${+mm}.${dd}`, 60, 300);
+  }
+  const g = ctx.createLinearGradient(0, H * 0.45, 0, H);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.55)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const lines = String(d.cover?.title || '').split('\n'), size = 66;
+  ctx.font = `900 ${size}px ${FONT}`; ctx.fillStyle = '#fff';
+  ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 18;
+  const top = H - 200 - lines.length * size * 1.3;
+  lines.forEach((t, i) => ctx.fillText(t, 72, top + size + i * size * 1.3));
+  ctx.shadowBlur = 0;
+}
+
+/* ===================== boot ===================== */
+render();
+(async () => {
+  const use = n => window.claude?.use ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
+  const [db, sample, downloads] = await Promise.all([use('db'), use('sample'), use('downloads')]);
+  S.sample = sample; S.downloads = downloads;
+  if (db) {
+    S.db = db; S.mode = 'db';
+    const timer = setTimeout(() => { if (S.mode === 'db' && !Object.keys(S.entries).length) flash('일기장을 불러오는 데 시간이 걸리고 있어요.'); }, 10000);
+    db.collection('diaries').onSnapshot(snap => {
+      clearTimeout(timer);
+      const next = {};
+      snap.docs.forEach(doc => { const v = doc.data(); if (v?.date) next[v.date] = v; });
+      // keep an in-flight chat on screen if its write hasn't echoed yet
+      if (view.name === 'write' && S.entries[view.date] && !next[view.date]) next[view.date] = S.entries[view.date];
+      S.entries = next;
+      if (view.name === 'home') render();
+    }, () => { clearTimeout(timer); flash('일기장을 불러오지 못했어요. 페이지를 다시 열어 주세요.'); });
+    try { const st = await db.doc('settings/style').get(); S.style = st.exists ? String(st.data()?.notes || '') : ''; } catch {}
+  } else {
+    S.mode = 'local';
+    S.entries = local.get('diaries') || {};
+    S.style = local.get('style') || '';
+  }
+  render();
+})();
+</script>
