@@ -268,7 +268,6 @@ function flash(text) {
 let view = { name: 'home', month: null, date: null };
 function go(name, date) {
   view = { ...view, name, date: date ?? view.date };
-  try { speechSynthesis.cancel(); } catch {}
   render(); window.scrollTo(0, 0);
 }
 function render() {
@@ -316,6 +315,7 @@ function renderHome(app) {
   const t = S.entries[today];
   app.append(h('div', { class: 'cta' }, h('button', { class: 'btn primary', onclick: () => t?.diary ? go('diary', today) : go('write', today) },
     t?.diary ? '오늘 일기 보기' : t ? '오늘 이야기 이어 하기' : '오늘 일기 쓰기')));
+  app.append(h('div', { class: 'cta', style: 'margin-top:8px' }, h('button', { class: 'btn', onclick: openImport }, 'Claude 앱 대화에서 가져오기')));
   app.append(h('p', { class: 'msg', style: 'text-align:center;margin-top:8px' }, '지난 날짜를 누르면 그날 일기를 보거나 새로 쓸 수 있어요.'));
 
   app.append(h('h2', { class: 'sec' }, '최근 일기'));
@@ -328,7 +328,7 @@ function renderHome(app) {
 }
 
 /* ===================== write (chat) ===================== */
-let busy = null, speak = local.get('speak') ?? false;
+let busy = null;
 function renderWrite(app) {
   const date = view.date, e = S.entries[date] || { date, messages: [{ role: 'assistant', content: FIRST_Q }] };
   if (!e.messages?.length) e.messages = [{ role: 'assistant', content: FIRST_Q }];
@@ -349,21 +349,13 @@ function renderWrite(app) {
   const sendBtn = h('button', { class: 'btn primary send', onclick: () => send(e, ta) }, '보내기');
   const stopBtn = h('button', { class: 'btn send', id: 'stop', hidden: true, onclick: () => busy?.abort() }, '멈춤');
   const makeBtn = h('button', { class: 'btn', id: 'make', onclick: () => makeDiary(e) }, e.diary ? '대화 내용으로 카드 다시 만들기' : '일기로 만들기');
-  const speakBtn = h('button', { class: 'toggle', 'aria-pressed': String(speak), onclick: () => {
-    speak = !speak; local.set('speak', speak); speakBtn.setAttribute('aria-pressed', String(speak)); speakBtn.textContent = speak ? '🔊 질문 읽어 주기 켜짐' : '🔈 질문 읽어 주기';
-    if (speak) say(e.messages[e.messages.length - 1]?.content); else try { speechSynthesis.cancel(); } catch {}
-  } }, speak ? '🔊 질문 읽어 주기 켜짐' : '🔈 질문 읽어 주기');
   app.append(h('div', { class: 'composer' },
     answers >= 2 ? h('div', { class: 'make' }, makeBtn) : null,
     h('div', { class: 'row' }, ta, sendBtn, stopBtn),
-    h('div', { class: 'hint' }, h('span', {}, '키보드의 🎙️를 누르면 말로 적을 수 있어요'), speakBtn),
+    h('div', { class: 'hint' }, h('span', {}, '키보드의 🎙️를 누르면 말로 대답할 수 있어요')),
     h('p', { class: 'msg', id: 'wmsg', 'aria-live': 'polite' })));
   ta.addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing && matchMedia('(pointer:fine)').matches) { ev.preventDefault(); send(e, ta); } });
   requestAnimationFrame(() => { window.scrollTo(0, document.body.scrollHeight); });
-}
-function say(text) {
-  if (!speak || !text) return;
-  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'ko-KR'; u.rate = 1; speechSynthesis.speak(u); } catch {}
 }
 function setBusy(on) {
   ['#stop'].forEach(s => { const el = $(s); if (el) el.hidden = !on; });
@@ -389,7 +381,6 @@ async function send(e, ta) {
     e.messages.push({ role: 'assistant', content: reply.trim() });
     bubble.classList.remove('think'); bubble.textContent = reply.trim();
     await saveEntry(e);
-    say(reply.trim());
     if (e.messages.filter(m => m.role === 'user').length === 2 && !$('#make')) { busy = null; render(); return; }
   } catch (err) {
     e.messages.pop(); bubble.remove(); chat.lastElementChild?.remove();
@@ -526,6 +517,44 @@ async function revise(e, request, keep) {
 async function undo(e) {
   e.diary = e.history.pop();
   await saveEntry(e); render(); flash('이전 버전으로 되돌렸어요.');
+}
+
+/* ===================== import from Claude app ===================== */
+function parseDiary(text) {
+  const m = String(text).match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('일기 데이터를 찾지 못했어요. Claude 앱 대화 마지막의 코드 블록을 통째로 붙여 넣어 주세요.');
+  let d;
+  try { d = JSON.parse(m[0]); } catch { throw new Error('중간에 잘린 것 같아요. 코드 블록 오른쪽 위 복사 버튼으로 다시 복사해 주세요.'); }
+  if (!d.cover || !Array.isArray(d.cards)) throw new Error('카드 형식이 아니에요. Claude 앱에서 "카드 형식으로 다시 줘"라고 해 보세요.');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date || '')) d.date = todayIso();
+  return d;
+}
+function openImport() {
+  const ta = h('textarea', { id: 'importText', 'aria-label': '가져올 일기', placeholder: '여기를 길게 눌러 붙여넣기' });
+  const msg = h('p', { class: 'msg', 'aria-live': 'polite' });
+  const actions = h('div', { class: 'tools', style: 'margin-top:0' });
+  const save = async d => {
+    const prev = S.entries[d.date];
+    await saveEntry({ date: d.date, diary: d, messages: prev?.messages || [], history: prev?.diary ? [...(prev.history || []), prev.diary].slice(-5) : [] });
+    scrim.remove(); go('diary', d.date); flash(`${nice(d.date)} 일기를 가져왔어요.`);
+  };
+  const tryImport = () => {
+    let d;
+    try { d = parseDiary(ta.value); } catch (err) { msg.className = 'msg err'; msg.textContent = err.message; return; }
+    if (S.entries[d.date]?.diary) {
+      msg.className = 'msg'; msg.textContent = `${nice(d.date)}에는 이미 일기가 있어요. 바꿀까요? 이전 일기는 "되돌리기"로 다시 볼 수 있어요.`;
+      actions.replaceChildren(h('button', { class: 'btn primary', onclick: () => save(d) }, '바꾸기'), h('button', { class: 'btn', onclick: () => scrim.remove() }, '취소'));
+      return;
+    }
+    save(d);
+  };
+  actions.append(h('button', { class: 'btn primary', onclick: tryImport }, '가져오기'), h('button', { class: 'btn', onclick: () => scrim.remove() }, '닫기'));
+  const scrim = h('div', { class: 'scrim', onclick: ev => { if (ev.target === scrim) scrim.remove(); } },
+    h('div', { class: 'sheet', role: 'dialog', 'aria-label': 'Claude 앱 대화에서 가져오기' },
+      h('h3', {}, 'Claude 앱 대화에서 가져오기'),
+      h('p', { class: 'msg' }, '일기 프로젝트에서 음성으로 대화한 뒤, 마지막에 나온 코드 블록의 복사 버튼을 누르고 여기에 붙여 넣으세요. 날짜에 맞춰 달력에 들어가요.'),
+      ta, msg, actions));
+  document.body.append(scrim); ta.focus();
 }
 
 /* ===================== 말투 메모 sheet ===================== */
