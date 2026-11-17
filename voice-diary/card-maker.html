@@ -103,10 +103,9 @@ pre.cap { white-space: pre-wrap; background: var(--field); border: 1px solid var
   </section>
 
   <section class="step">
-    <h2><span class="n">3</span> 이름</h2>
+    <h2><span class="n">3</span> 계정 이름</h2>
     <div class="row">
       <label class="f">계정 이름 (카드 왼쪽 위)<input type="text" id="brand"></label>
-      <label class="f">내 이름 (빨간 글씨)<input type="text" id="me"></label>
     </div>
   </section>
 
@@ -128,34 +127,30 @@ const FONT = '"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif
 const INK = '#1d1d1d', PAPER = '#f8f8f6', RED = '#c2410c';
 
 const EXAMPLE = {
-  date: "2026-11-08",
-  mood: "tired",
-  cover: { title: "월요일 같은 일요일은\n어떻게 버텨지는가?" },
-  cards: [
+  "date": "2026-11-08",
+  "mood": "tired",
+  "cover": {
+    "title": "쉬는 날인데\n나는 왜 더 피곤했을까?"
+  },
+  "cards": [
     {
-      headline: "“쉬는 날인데\n왜 더 피곤한지 모르겠어요…”",
-      intro: "체리는 오늘 오전 내내 침대에서 나오지 못했다고 한다. 알람을 세 번이나 껐고, 결국 점심이 다 되어서야 일어났다. 밀린 과제가 머릿속에 계속 맴돌았다고.",
-      speaker: "",
-      quote: "일요일이면 푹 쉬어야 하는데, 쉬는 동안에도 계속 할 일 생각이 나요. **누워 있는데 마음은 하나도 안 쉬는 느낌.** 그래서 오히려 평일보다 더 지쳐요."
+      "headline": "“쉬는 날인데\n왜 더 피곤한 걸까”",
+      "intro": "오전 내내 침대에서 못 나왔다. 알람을 세 번이나 끄고 점심이 다 돼서야 일어났다.",
+      "speaker": "",
+      "quote": "쉬는 날이면 푹 쉬어야 하는데 누워 있는 동안에도 밀린 과제 생각이 계속 났다. **몸은 누워 있는데 마음은 하나도 못 쉰 느낌.** 그래서 오히려 평일보다 더 지쳤다."
     },
     {
-      headline: "“떡볶이 하나로\n하루가 좀 괜찮아졌어요”",
-      intro: "오후에는 동네 분식집에 혼자 다녀왔다고 한다. 체리가 오늘 가장 좋았던 순간으로 꼽은 건 의외로 이 짧은 외출이었다.",
-      speaker: "",
-      quote: "별거 아닌데 밖에 나가서 바람 쐬니까 좀 살 것 같더라구요. **맵고 뜨거운 거 먹으니까 머리가 비워지는 느낌이었어요.** 다음 주에도 일요일엔 꼭 한 번은 나가 보려구요."
-    },
-    {
-      headline: "“과제 때문에 진짜\n화가 많이 났어요”",
-      intro: "저녁에는 조별 과제 단톡방 때문에 한바탕 속을 끓였다고 한다. 마감이 내일인데 맡은 부분을 아직 안 올린 팀원이 있었다고.",
-      speaker: "",
-      quote: "솔직히 너무 화가 나서 한참 씩씩거렸어요. 그래도 단톡방에는 차분하게 말했어요. **화난 건 화난 거고, 내가 할 수 있는 건 내 몫을 잘 하는 거니까.** 그건 좀 잘한 것 같아요."
+      "headline": "“떡볶이 하나로\n하루가 좀 괜찮아졌다”",
+      "intro": "오후에 동네 분식집에 혼자 다녀왔다. 오늘 제일 좋았던 순간을 꼽으라면 이 짧은 외출이다.",
+      "speaker": "",
+      "quote": "별거 아닌데 밖에 나가서 바람 쐬니까 좀 살 것 같았다. **맵고 뜨거운 걸 먹으니까 머리가 비워지는 느낌이었다.** 다음 주 일요일에도 한 번은 꼭 나가야지."
     }
   ],
-  closing: {
-    headline: "쉬는 날을 버티게 하는 건\n결국 아주 작은 외출이다…",
-    body: "쉬는 날이라고 저절로 쉬어지지는 않는다. 할 일이 남아 있으면 몸은 누워 있어도 마음은 계속 일을 한다. **그럴 때 필요한 건 거창한 휴식이 아니라 잠깐 문밖으로 나가는 일이다.** 떡볶이 한 접시, 동네 한 바퀴. 다음 일요일에는 조금 더 일찍 나가 봐야겠다."
+  "closing": {
+    "headline": "쉬는 날을 버티게 하는 건\n아주 작은 외출",
+    "body": "쉬는 날이라고 저절로 쉬어지진 않는다. 할 일이 남아 있으면 몸은 누워 있어도 마음은 계속 일을 한다. **그럴 때 필요한 건 거창한 휴식이 아니라 잠깐 문밖으로 나가는 일.** 다음 일요일엔 조금 더 일찍 나가 봐야겠다."
   },
-  caption: "일요일인데 월요일처럼 지친 날 🫠 떡볶이가 살렸다\n\n#오늘의체리 #말로쓰는일기 #일기 #일상기록"
+  "caption": "일요일인데 월요일처럼 지친 날 🫠 떡볶이가 살렸다\n\n#말로쓰는일기 #일기 #일상기록"
 };
 
 const MOODS = {
@@ -254,9 +249,9 @@ function headline(ctx, text, top) {
 function drawStory(ctx, c, brand, me, pageNo) {
   paperCard(ctx, brand, pageNo);
   const after = headline(ctx, c.headline, 190);
-  const speaker = (c.speaker || me || '나').trim();
+  const speaker = (c.speaker || '').trim();
   const quote = runs(c.quote);
-  quote.unshift({ t: speaker + ' ', b: true, c: RED });
+  if (speaker) quote.unshift({ t: speaker + ' ', b: true, c: RED });
   bodyBlock(ctx, [runs(c.intro), quote], after + 56);
 }
 function drawClosing(ctx, c, brand, pageNo) {
@@ -319,10 +314,10 @@ async function fonts(text) {
   try { await Promise.all(['400', '700', '900'].map(w => document.fonts.load(`${w} 40px "Noto Sans KR"`, chars))); } catch {}
 }
 async function render() {
-  const brand = $('brand').value.trim() || '오늘의 체리', me = $('me').value.trim() || '체리';
-  await fonts(JSON.stringify(data) + brand + me);
+  const brand = $('brand').value.trim() || '오늘의 체리';
+  await fonts(JSON.stringify(data) + brand);
   const pages = [ctx => drawCover(ctx, data, brand)];
-  data.cards.forEach((c, i) => pages.push(ctx => drawStory(ctx, c, brand, me, i + 1)));
+  data.cards.forEach((c, i) => pages.push(ctx => drawStory(ctx, c, brand, '', i + 1)));
   if (data.closing) pages.push(ctx => drawClosing(ctx, data.closing, brand, data.cards.length + 1));
   const track = $('track'); track.innerHTML = ''; canvases = [];
   pages.forEach((draw, i) => {
@@ -361,7 +356,7 @@ $('photo').onchange = e => {
 };
 $('noPhoto').onclick = () => { photo = null; $('photo').value = ''; data && render(); };
 $('mood').onchange = () => data && render();
-['brand', 'me'].forEach(id => $(id).addEventListener('change', () => { store.set('vd-' + id, $(id).value); data && render(); }));
+['brand'].forEach(id => $(id).addEventListener('change', () => { store.set('vd-' + id, $(id).value); data && render(); }));
 
 $('copyCap').onclick = async () => {
   try { await navigator.clipboard.writeText(data.caption); $('saveMsg').textContent = '캡션을 복사했어요.'; }
@@ -389,7 +384,6 @@ $('saveAll').onclick = async () => {
 };
 
 $('brand').value = store.get('vd-brand') || '오늘의 체리';
-$('me').value = store.get('vd-me') || '체리';
 $('src').value = store.get('vd-src') || JSON.stringify(EXAMPLE, null, 2);
 run();
 </script>
