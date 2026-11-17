@@ -60,7 +60,7 @@ pre.cap { white-space: pre-wrap; background: var(--field); border: 1px solid var
 
 <div class="wrap">
   <header>
-    <h1>오늘의 체리 카드</h1>
+    <h1>11월 9일 일기 카드</h1>
     <p>말로 남긴 일기를 인스타 캐러셀 카드(1080×1350)로 만들어요.</p>
   </header>
 
@@ -103,14 +103,7 @@ pre.cap { white-space: pre-wrap; background: var(--field); border: 1px solid var
   </section>
 
   <section class="step">
-    <h2><span class="n">3</span> 계정 이름</h2>
-    <div class="row">
-      <label class="f">계정 이름 (카드 왼쪽 위)<input type="text" id="brand"></label>
-    </div>
-  </section>
-
-  <section class="step">
-    <h2><span class="n">4</span> 저장하고 올리기</h2>
+    <h2><span class="n">3</span> 저장하고 올리기</h2>
     <div class="row">
       <button class="primary" id="saveAll">카드 전부 저장</button>
       <button id="copyCap">캡션 복사</button>
@@ -322,11 +315,12 @@ function parse(text) {
 }
 async function fonts(text) {
   if (!document.fonts) return;
-  const chars = [...new Set(text + '오늘의체리 0123456789')].join('');
+  const chars = [...new Set(text + '0123456789. ')].join('');
   try { await Promise.all(['400', '700', '900'].map(w => document.fonts.load(`${w} 40px "Noto Sans KR"`, chars))); } catch {}
 }
 async function render() {
-  const brand = $('brand').value.trim() || '오늘의 체리';
+  const [y, m, dd] = String(data.date || '').split('-');
+  const brand = y && m && dd ? `${y}. ${m}. ${dd}` : '';
   await fonts(JSON.stringify(data) + brand);
   const pages = [ctx => drawCover(ctx, data, brand)];
   data.cards.forEach((c, i) => pages.push(ctx => drawStory(ctx, c, brand, '', i + 1)));
@@ -368,7 +362,6 @@ $('photo').onchange = e => {
 };
 $('noPhoto').onclick = () => { photo = null; $('photo').value = ''; data && render(); };
 $('mood').onchange = () => data && render();
-['brand'].forEach(id => $(id).addEventListener('change', () => { store.set('vd-' + id, $(id).value); data && render(); }));
 
 $('copyCap').onclick = async () => {
   try { await navigator.clipboard.writeText(data.caption); $('saveMsg').textContent = '캡션을 복사했어요.'; }
@@ -395,7 +388,6 @@ $('saveAll').onclick = async () => {
   }
 };
 
-$('brand').value = store.get('vd-brand') || '오늘의 체리';
 $('src').value = JSON.stringify(EXAMPLE, null, 2);
 run();
 </script>
