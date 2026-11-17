@@ -1,4 +1,4 @@
-<title>체리 일기장</title>
+<title>일기장</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -285,7 +285,7 @@ function renderHome(app) {
   const m = view.month, y = m.getFullYear(), mo = m.getMonth();
   const today = todayIso();
   app.append(h('div', { class: 'bar' },
-    h('h1', {}, '체리 일기장'),
+    h('h1', {}, '일기장'),
     h('button', { class: 'icon', 'aria-label': '내 말투 메모', title: '내 말투 메모', onclick: openStyle }, '✎')));
   if (S.mode === 'local') app.append(h('div', { class: 'banner' }, '이 화면에서는 일기가 이 기기에만 저장돼요. Claude 앱에 로그인한 상태로 열면 어디서나 볼 수 있어요.'));
 

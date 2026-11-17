@@ -1,6 +1,6 @@
 # 🌙 말로 쓰는 일기 (Voice Diary)
 
-> **지금은 [체리 일기장](https://claude.ai/artifact/12k9NwXsev4kEzSH6yrvAT) 하나로 다 해요.** 달력에서 날짜를 고르고, Claude와 대화하고, 그 자리에서 카드로 만들고 다듬어요. 소스는 [`diary-app.html`](./diary-app.html). 아래는 예전 방식(Claude 프로젝트 + 카드 메이커) 안내예요.
+> **지금은 [일기장](https://claude.ai/artifact/12k9NwXsev4kEzSH6yrvAT) 하나로 다 해요.** 달력에서 날짜를 고르고, Claude와 대화하고, 그 자리에서 카드로 만들고 다듬어요. 소스는 [`diary-app.html`](./diary-app.html). 아래는 예전 방식(Claude 프로젝트 + 카드 메이커) 안내예요.
 
 침대에 누워서 핸드폰을 보지 않고, Claude와 **말로 수다 떨면** 그 대화가 일기로 정리돼요.
 
