@@ -272,11 +272,11 @@ function drawCover(ctx, d, brand) {
     const img = ctx.getImageData(0, 0, W, H), px = img.data;   // film grain
     for (let i = 0; i < px.length; i += 4) { const n = (Math.random() - 0.5) * 26; px[i] += n; px[i + 1] += n; px[i + 2] += n; }
     ctx.putImageData(img, 0, 0);
-    if (d.date) {
-      const [, mm, dd] = d.date.split('-');
-      ctx.font = `900 220px ${FONT}`; ctx.fillStyle = 'rgba(255,255,255,.16)';
-      ctx.fillText(`${+mm}.${dd}`, 60, 300);
-    }
+  }
+  if (d.date) {                          // the only date on the carousel
+    const [, mm, dd] = d.date.split('-');
+    ctx.font = `900 220px ${FONT}`; ctx.fillStyle = photo ? 'rgba(255,255,255,.28)' : 'rgba(255,255,255,.16)';
+    ctx.fillText(`${+mm}.${dd}`, 60, 300);
   }
   const g = ctx.createLinearGradient(0, H * 0.45, 0, H);
   g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.55)');
@@ -307,8 +307,7 @@ async function fonts(text) {
   try { await Promise.all(['400', '700', '900'].map(w => document.fonts.load(`${w} 40px "Noto Sans KR"`, chars))); } catch {}
 }
 async function render() {
-  const [y, m, dd] = String(data.date || '').split('-');
-  const brand = y && m && dd ? `${y}. ${m}. ${dd}` : '';
+  const brand = '';
   await fonts(JSON.stringify(data) + brand);
   const pages = [ctx => drawCover(ctx, data, brand)];
   data.cards.forEach((c, i) => pages.push(ctx => drawStory(ctx, c, brand, '', i + 1)));
